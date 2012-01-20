@@ -1,0 +1,15 @@
+﻿@using GriffinTable.Mvc3
+@model GriffinTable.Demo.Controllers.GriffinTableViewModel<GriffinTable.Demo.Models.TableModel>
+@{
+    ViewBag.Title = "Home Page";
+}
+<h2>@ViewBag.Title</h2>
+
+@using (Html.GriffinTableForm("UserTable", route: new { action = "Items" }))
+{
+    @Html.TextBox("Term")
+    <input type="submit" value="Search" />
+}
+
+@Html.GriffinTable("UserTable", Model, GriffinTableOptions.CreateScript)
+

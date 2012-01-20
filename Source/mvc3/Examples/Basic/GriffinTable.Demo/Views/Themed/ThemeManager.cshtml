@@ -1,0 +1,105 @@
+﻿@using GriffinTable.Mvc3
+@{
+    ViewBag.Title = "StyledTable";
+}
+
+<h2>StyledTable</h2>
+
+@using (Html.GriffinTableForm("mytable", new { action = "Items" }))
+{
+}
+
+<table id="mytable" class="table">
+    <thead>
+        <tr>
+            <th rel="Id">Id</th>
+            <th rel="FirstName">First Name</th>
+            <th rel="LastName">Last Name</th>
+            <th rel="Age">Age</th>
+            <th rel="Options">&nbsp;</th>
+        </tr>
+    </thead>
+    <tbody class="ui-widget ui-widget-content ui-corner-all">
+    </tbody>
+</table>
+<script type="text/javascript">
+    var myThemeManager = {
+        applyTheme: function($table) {
+            // format table headers
+            $('thead th', $table).each(function(row) {
+                var $this = $(this);
+                var contents = $this.html();
+                $this.css('background', 'black');
+                $this.css('color', 'white');
+
+                // no sorting for this column
+                if (contents === '' || contents === ' ' || contents === '&nbsp;') {
+                    return this;
+                }
+
+                // add default icon to indicate that sorting is possible
+                contents = '<span class="contents">-=)&gt;' + contents + '&lt;(=-</span><div class="ui-icon ui-icon-triangle-2-n-s" style="float:right;vertical-align:middle"></div>';
+                $this.html(contents);
+
+                return this;
+            });
+
+
+            $table.addClass('ui-widget');
+            $table.attr('cellspacing', '0');
+            $table.attr('cellpadding', '0');
+            $table.css('border-collapse', 'collapse');
+            $table.css('width', '100%');
+        },
+
+        applyButtonStyle: function($elem) {
+            $elem.addClass('ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only');
+            $elem.css('margin-top', '10px');
+            $elem.css('padding', '10px');
+        },
+
+        applyRowTheme: function($tr, rowNumber) {
+            //if (rowNumber % 2 == 1) {
+            //  $tr.children('td').addClass('odd');
+            //}
+        },
+
+        applyActiveButtonStyle: function($elem) {
+            $elem.addClass('ui-state-active');
+        },
+
+        removeActiveButtonStyle: function($elem) {
+            $elem.removeClass('ui-state-active');
+        },
+
+        clearSorting: function($table) {
+            $('thead th .ui-icon', $table).removeClass('ui-icon-triangle-1-s');
+            $('thead th .ui-icon', $table).removeClass('ui-icon-triangle-1-n');
+            $('thead th .ui-icon', $table).addClass('ui-icon-triangle-2-n-s');
+            $('thead th', $table).removeClass('ui-state-highlight');
+        },
+
+        // order = 'asc', 'desc' or ''.
+        applySorting: function($th, order) {
+            $($th).addClass('ui-state-highlight');
+            switch (order) {
+            case 'asc':
+                $('.ui-icon', $th).removeClass('ui-icon-triangle-2-n-s');
+                $('.ui-icon', $th).addClass('ui-icon-triangle-1-n');
+                break;
+            case 'desc':
+                $('.ui-icon', $th).removeClass('ui-icon-triangle-2-n-s');
+                $('.ui-icon', $th).addClass('ui-icon-triangle-1-s');
+                break;
+            default:
+                $th.removeClass('ui-state-highlight');
+                break;
+            }
+        }
+    };
+    
+    $(function () {
+        $('#mytable').griffinTable({ fetchAtStart: true, themeManager: myThemeManager });
+        //$('table').griffinTable('loadData', jsonResponse.Rows);
+    });
+</script>

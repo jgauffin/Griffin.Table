@@ -1,0 +1,38 @@
+﻿@using GriffinTable.Mvc3
+@{
+    ViewBag.Title = "StyledTable";
+}
+<h2>StyledTable</h2>
+
+@using (Html.GriffinTableForm("mytable", new { action = "Items" }))
+{
+}
+
+<table id="mytable" class="myTheme">
+    <thead>
+        <tr>
+            <th rel="Id">
+                Id
+            </th>
+            <th rel="FirstName">
+                First Name
+            </th>
+            <th rel="LastName">
+                Last Name
+            </th>
+            <th rel="Age">
+                Age
+            </th>
+            <th rel="Options">
+                &nbsp;
+            </th>
+        </tr>
+    </thead>
+    <tbody class="ui-widget ui-widget-content ui-corner-all">
+    </tbody>
+</table>
+<script type="text/javascript">
+    $(function () {
+        $('#mytable').griffinTable({ fetchAtStart: true, themeManager: $.griffinTableExtensions.themeManagers.noTheme });
+    });
+</script>

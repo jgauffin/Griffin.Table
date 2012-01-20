@@ -1,0 +1,62 @@
+﻿@using GriffinTable.Mvc3
+@model GriffinTable.Demo.Controllers.GriffinTableViewModel<GriffinTable.Demo.Models.TableModel>
+@{
+    ViewBag.Title = "Home Page";
+}
+<h2>@ViewBag.Title</h2>
+
+@using (Html.GriffinTableForm("UserTable", route: new { action = "Items" }))
+{
+    @Html.TextBox("Term")
+    <input type="submit" value="Search" />
+}
+
+@Html.GriffinTable("UserTable", Model)
+
+<script type="text/javascript">
+    var customPager = {
+        init: function ($table, $form, themeManager) {
+            $moreLink = $('<a style="display:none" href="" id=' + $table.attr('id') + '-pager' + '>Show some more!</a>');
+            var settings = {
+                $table: $table,
+                themeManager: themeManager,
+                $form: $form,
+                $moreLink: $moreLink
+            };
+
+            themeManager.applyButtonStyle($moreLink);
+
+            $moreLink.click(function (evt) {
+                evt.preventDefault();
+                var newValue = parseInt($('input[name=PageNumber]', settings.$form).val()) + 1;
+                $('input[name=PageNumber]', settings.$form).val(newValue + '');
+                settings.$form.submit();
+            });
+
+            $table.data('pager-settings', settings);
+            $table.after($moreLink);
+        },
+
+        loadingRows: function () {
+            
+        },
+        
+        rowsLoaded: function ($table, currentPageNumber, totalRows) {
+            var settings = $table.data('pager-settings');
+            var rowsAdded = $('tbody tr', settings.$table).length;
+
+            if (rowsAdded < totalRows) {
+                settings.$moreLink.html('We got ' + (totalRows - rowsAdded) + ' rows to go!');
+                settings.$moreLink.show();
+            } else {
+                settings.$moreLink.hide();
+            }
+        }
+    };
+
+    $(function () {
+        $('table').griffinTable({ pageManager: customPager, totalRowCount: @Model.TotalRowCount });
+    });
+</script>
+
+
