@@ -37,8 +37,10 @@
             $table.after($moreLink);
         },
 
-        loadingRows: function () {
-            
+        loadingRows: function ($table, currentPageNumber, totalRows, options) {
+            if (currentPageNumber == 1 && options.canClear) {
+                $('tbody tr', $table).remove();
+            }
         },
         
         rowsLoaded: function ($table, currentPageNumber, totalRows) {

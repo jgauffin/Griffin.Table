@@ -208,7 +208,7 @@
 
                 this.initializePaging = function () {
                     pluginContext.settings.pageManager.init($plugin, pluginContext.form, settings.themeManager);
-                    pluginContext.form.append('<input type="hidden" name="PageNumber" value="0" />');
+                    pluginContext.form.append('<input type="hidden" name="PageNumber" value="1" />');
                     pluginContext.form.append('<input type="hidden" name="PageSize" value="20" />');
                     if (pluginContext.settings.totalRowCount > 0) {
                         pluginContext.settings.pageManager.loadingRows(pluginContext.$table, plugin.getCurrentPage(), options.totalRowCount, { canClear: false });
@@ -291,6 +291,9 @@
 
                     $('input[name=SortOrder], pluginContent.form').val(currentSort);
                     $('input[name=SortColumn], pluginContent.form').val($this.attr('rel'));
+                    
+                    // reset paging on sort.
+                    $('input[name=PageNumber], pluginContent.form').val('1');
 
                     pluginContext.plugin.submitForm();
                 };
@@ -488,7 +491,11 @@ $.griffinTableExtensions.pageManagers.pageListPager = {
                 }
             }
 
+            $('a.active', settings.$container).removeClass('active');
+            if (currentPageNumber == 0)
+                currentPageNumber = 1;
             var id = $table.attr('id') + '_page_' + currentPageNumber;
+            $('#' + id).addClass('active');
             settings.themeManager.removeActiveButtonStyle($('a', settings.$container));
             settings.themeManager.applyActiveButtonStyle($('#' + id));
 

@@ -354,3 +354,8 @@ table.myTheme tr.odd {
     text-decoration: none;
     margin: 3px;
 }
+
+.griffin-table-pager a.active {
+    font-size: 20px;
+    
+}
