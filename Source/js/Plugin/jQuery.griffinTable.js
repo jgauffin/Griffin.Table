@@ -421,7 +421,8 @@ $.griffinTableExtensions = {
 
 $.griffinTableExtensions.pageManagers.showMoreLinkPager = {
     init: function ($table, $form, themeManager) {
-        $moreLink = $('<a style="display:none" href="" id=' + $table.attr('id') + '-pager' + '>Show more</a>');
+		var $container = $('<div class="griffin-table-pager" id="' + $table.attr('id') + '-pager"></div>');
+        var $moreLink = $('<a style="display:none" href="" id=' + $table.attr('id') + '-pager' + '>Show more</a>');
         var settings = {
             $table: $table,
             themeManager: themeManager,
@@ -441,7 +442,11 @@ $.griffinTableExtensions.pageManagers.showMoreLinkPager = {
 
 
         $table.data('pager-settings', settings);
-        $table.after($moreLink);
+		$table.after($container);
+		$container.append($moreLink);
+    },
+
+    loadingRows: function ($table, currentPageNumber, totalRows, options) {
     },
 
 
@@ -461,7 +466,7 @@ $.griffinTableExtensions.pageManagers.pageListPager = {
 
 
     init: function ($table, $form, themeManager) {
-        $container = $('<div class="griffin-table-pager" style="text-align:right;width:100%;"></div>');
+        $container = $('<div class="griffin-table-pager" id="' + $table.attr('id') + '-pager" style="text-align:right;width:100%;"></div>');
         var settings = {
             $table: $table,
             themeManager: themeManager,
@@ -532,6 +537,33 @@ $.griffinTableExtensions.pageManagers.pageListPager = {
     }
 };
 
+$.griffinTableExtensions.pageManagers.showMoreLinkPager = {
+	/**
+	 * Initialize the pager
+	 * @param $table jQuery object 
+	 * @param $form Form for the table. Contains inputs with the names PageSize and PageNumber
+	 * @param themeManager Should be used for styling
+	 */
+    init: function ($table, $form, themeManager) {
+    },
+
+	/** New rows are about to be loaded/appended.
+	 * @param jQuery object
+	 * @param currentPageNumber Loaded page
+	 * @param totalRows Number of matching rows that can be loaded
+	 * @param options options.canClear tells if the table can be cleared of items
+	 */
+    loadingRows: function ($table, currentPageNumber, totalRows, options) {
+    },
+
+	/** All rows for the page have been loaded
+	 * @param $table jQuery object
+	 * @param currentPageNumber The page that should be used
+	 * @param totalRows total number of rows that can be added
+	 */
+    rowsLoaded: function ($table, currentPageNumber, totalRows) {
+    }
+};
 
 // Apply jQuery UI theme to the table
 $.griffinTableExtensions.themeManagers.jQueryUI = {
