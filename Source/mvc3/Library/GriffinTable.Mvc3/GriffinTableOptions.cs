@@ -14,7 +14,7 @@ namespace GriffinTable.Mvc3
 		None = 0,
 
 		/// <summary>
-		/// Create the <![CDATA[<script>]]> tag to initialize the table
+		/// Create the <![CDATA[<script>]]> tag used to initialize the table
 		/// </summary>
 		CreateScript = 0x1
 	}

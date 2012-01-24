@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following 
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("GriffinTable.Mvc3")]
+[assembly: AssemblyTitle("Griffin.Table.Mvc3")]
 [assembly: AssemblyDescription("ASP.NET MVC3 Package for the jQuery plugin GriffinTable")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Gauffin Telecom AB")]
-[assembly: AssemblyProduct("GriffinTable.Mvc3")]
+[assembly: AssemblyProduct("Griffin.Table.Mvc3")]
 [assembly: AssemblyCopyright("Copyright © Jonas Gauffin 2012")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]

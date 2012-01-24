@@ -1,0 +1,6 @@
+Griffin.Table 
+
+A jQuery table plugin.
+
+Visit the wiki: https://github.com/jgauffin/Griffin.Table/wiki
+

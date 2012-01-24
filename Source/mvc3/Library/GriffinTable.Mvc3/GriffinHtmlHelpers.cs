@@ -7,12 +7,23 @@ using System.Web;
 using System.Web.Mvc;
 using System.Web.Mvc.Html;
 using System.Web.Routing;
-using GriffinTable.Demo.Controllers;
 
 namespace GriffinTable.Mvc3
 {
+	/// <summary>
+	/// HTML helpers
+	/// </summary>
 	public static class GriffinHtmlHelpers
 	{
+		/// <summary>
+		/// Generate a basic form. Use it as you would with <c>BeginForm</c>
+		/// </summary>
+		/// <param name="htmlHelper">this</param>
+		/// <param name="tableName">Name of the table, same as in <see cref="GriffinTable"/></param>
+		/// <param name="route">A route object like <c>new { action: "Items" }</c></param>
+		/// <param name="htmlAttributes">Additional html attributes</param>
+		/// <param name="method">How to post the form</param>
+		/// <returns>form container</returns>
 		public static MvcForm GriffinTableForm(this HtmlHelper htmlHelper, string tableName, object route = null, object htmlAttributes = null, FormMethod method = FormMethod.Post)
 		{
 			var routeDictionary = new RouteValueDictionary(route);
@@ -34,25 +45,15 @@ namespace GriffinTable.Mvc3
 			return new MvcForm(htmlHelper.ViewContext);
 		}
 
-		private class GriffinForm : IDisposable
-		{
-			private readonly HttpResponseBase _httpResponseBase;
-
-			public GriffinForm(HttpResponseBase httpResponseBase)
-			{
-				_httpResponseBase = httpResponseBase;
-			}
-
-			/// <summary>
-			/// Performs application-defined tasks associated with freeing, releasing, or resetting unmanaged resources.
-			/// </summary>
-			/// <filterpriority>2</filterpriority>
-			public void Dispose()
-			{
-				_httpResponseBase.Write("</form>");
-			}
-		}
-
+		/// <summary>
+		/// Generate a table
+		/// </summary>
+		/// <typeparam name="T">Type of entity to list</typeparam>
+		/// <param name="helper">this</param>
+		/// <param name="tableName">Name of the table</param>
+		/// <param name="model">Model used to generate rows</param>
+		/// <param name="options">Additional options</param>
+		/// <returns>Generated table</returns>
 		public static MvcHtmlString GriffinTable<T>(this HtmlHelper helper, string tableName, GriffinTableViewModel<T> model, GriffinTableOptions options = GriffinTableOptions.None)
 			where T : class
 		{

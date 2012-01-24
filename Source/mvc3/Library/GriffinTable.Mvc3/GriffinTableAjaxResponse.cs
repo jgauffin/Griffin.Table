@@ -1,7 +1,10 @@
 using System.Collections;
 
-namespace GriffinTable.Demo.Controllers
+namespace GriffinTable.Mvc3
 {
+	/// <summary>
+	/// Response that should be sent back to the table
+	/// </summary>
 	public class GriffinTableAjaxResponse
 	{
 		/// <summary>
