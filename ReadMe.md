@@ -23,6 +23,17 @@ ASP.NET MVC3 features
 * Custom view model to structure your view properly
 * Custom model to take as action parameter when searching/filtering
 
+Installation (nuget)
+--------------------
+
+Only the jQuery plugin:
+
+    install-package griffin.table
+	
+The ASP.NET MVC3 integration package:
+
+	install-package griffin.table.mvc3
+
 More information
 =================
 
