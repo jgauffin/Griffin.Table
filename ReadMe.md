@@ -1,7 +1,7 @@
 Griffin Table - A jQuery table plugin
 =====================================
 
-GriffinTable is a JSON based table plugin form jQuery. 
+GriffinTable is a JSON based table plugin for jQuery. 
 
 Current features
 ----------------

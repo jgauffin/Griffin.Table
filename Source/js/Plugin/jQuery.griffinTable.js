@@ -537,7 +537,7 @@ $.griffinTableExtensions.pageManagers.pageListPager = {
     }
 };
 
-$.griffinTableExtensions.pageManagers.showMoreLinkPager = {
+$.griffinTableExtensions.pageManagers.noPager = {
 	/**
 	 * Initialize the pager
 	 * @param $table jQuery object 
