@@ -1,10 +1,11 @@
-﻿(function ($) {
+﻿/*global window: false */
+(function ($) {
+	"use strict";
     function toObject(jsonArray) {
         if (!(jsonArray instanceof Array)) {
             return jsonArray;
         }
-        var rv = {};
-        var i = 0;
+        var rv = {}, i = 0;
         for (; i < jsonArray.length; ++i) {
             if (jsonArray[i] !== undefined) {
                 rv[jsonArray[i].name] = jsonArray[i].value;
@@ -26,7 +27,7 @@
 
                 /** Default settings */
                 var settings = { /** Load rows through ajax when table is initialized */
-                    fetchAtStart: true,
+                    fetchAtStart: false,
 
                     /** Suffix used to find the form which belongs to this table */
                     formSuffix: '-form',
@@ -41,7 +42,8 @@
                     formId: null,
 
                     /** The theme manager to use. */
-                    themeManager: griffinTable.themeManager.jQueryUI,
+                    themeManager: $.griffinTableExtensions.themeManagers.jQueryUI,
+
 
                     /** styles that should be applied to the table */
                     styles: { /** Class to append to odd rows, used by the default themeManger */
@@ -60,7 +62,8 @@
                     pageSize: 20,
 
                     /** Builds the paging at the bottom of a page */
-                    pageManager: griffinTable.pager.pageListPager,
+                    pageManager: $.griffinTableExtensions.pageManagers.pageListPager,
+
 
                     /** Extension points that you can use to plug into the table */
                     callbacks: {
@@ -157,7 +160,7 @@
                     plugin: $plugin
                 };
                 var templateNode = $('#' + settings.name + settings.rowTemplateSuffix);
-                if (templateNode.length == 1) {
+                if (templateNode.length === 1) {
                     $.template("rowTemplate", templateNode); //outerhtml: .clone().wrap('<div></div>').parent().html()
                     pluginContext.rowRendering.render = function (row) {
                         return pluginContext.plugin.renderRowUsingTemplate(row);
@@ -184,6 +187,8 @@
                             index: index,
                             name: $(this).attr('rel')
                         };
+
+                        column.hidden = column.element.css('display') === 'none' || column.element.hasClass('hidden');
                         pluginContext.columns[index] = column;
                         pluginContext.columnNameMapping[column.name] = column;
                         column.element.data('griffinColumn', column);
@@ -205,8 +210,13 @@
                 };
 
                 this.initializePaging = function () {
-                    pluginContext.form.append('<input type="hidden" name="PageNumber" value="0" />');
+                    pluginContext.settings.pageManager.init($plugin, pluginContext.form, settings.themeManager);
+                    pluginContext.form.append('<input type="hidden" name="PageNumber" value="1" />');
                     pluginContext.form.append('<input type="hidden" name="PageSize" value="20" />');
+                    if (pluginContext.settings.totalRowCount > 0) {
+                        pluginContext.settings.pageManager.loadingRows(pluginContext.$table, plugin.getCurrentPage(), options.totalRowCount, { canClear: false });
+                        pluginContext.settings.pageManager.rowsLoaded(pluginContext.$table, plugin.getCurrentPage(), options.totalRowCount);
+                    }
                 };
 
                 this.resetPaging = function () {
@@ -214,7 +224,7 @@
                 };
 
                 this.getCurrentPage = function () {
-                    return parseInt($('input[name=PageNumber]', pluginContext.form).val());
+                    return parseInt($('input[name=PageNumber]', pluginContext.form).val(), 10);
                 };
 
                 // Takes an (json) object and renders it using a template
@@ -240,9 +250,12 @@
 
                     var $row = $('<tr></tr>');
                     $.each(pluginContext.columns, function (columnIndex, column) {
-                        var $column = $('<td></td>');
-                        $column.html(fetchColumnValue(row, columnIndex));
-                        $column.appendTo($row);
+                        var $cell = $('<td></td>');
+                        if (column.hidden) {
+                            $cell.css('display', 'none');
+						}
+                        $cell.html(fetchColumnValue(row, columnIndex));
+                        $cell.appendTo($row);
                     });
 
                     return $row;
@@ -268,7 +281,7 @@
                         case 'desc':
                             currentSort = '';
                             break;
-                        case '':
+                        default:
                             currentSort = 'asc';
                             break;
                     }
@@ -280,12 +293,18 @@
                     pluginContext.settings.themeManager.clearSorting(pluginContext.plugin);
                     pluginContext.settings.themeManager.applySorting($this, currentSort);
 
+                    $('input[name=SortOrder], pluginContent.form').val(currentSort);
+                    $('input[name=SortColumn], pluginContent.form').val($this.attr('rel'));
+                    
+                    // reset paging on sort.
+                    $('input[name=PageNumber], pluginContent.form').val('1');
+
                     pluginContext.plugin.submitForm();
-                    return false;
+
                 };
 
                 this.submitForm = function () {
-                    //pluginContext.plugin.settings.form.submit();
+                    pluginContext.form.submit();
                 };
 
                 this.getData = function () {
@@ -295,19 +314,15 @@
                 this.loadData = function (data) {
                     var rowCount = $plugin.children('tbody tr').length;
 
-                    if (typeof data.Rows == 'undefined') {
+                    if (typeof data.Rows === 'undefined') {
                         data.Rows = data;
                         data.TotalRowCount = 0;
-                        data.RowMode = 0;
-                    };
-
-                    var $tbody = $('tbody', $plugin);
-                    if (data.RowMode == 0 || data.RowMode == 'Clear') {
-                        $('tr', $tbody).remove();
-                        plugin.resetPaging();
                     }
 
-                    pluginContext.settings.pageManager.loadingRows(pluginContext.$table, plugin.getCurrentPage(), data.TotalRowCount);
+                    var $tbody = $('tbody', $plugin);
+
+
+                    pluginContext.settings.pageManager.loadingRows(pluginContext.$table, plugin.getCurrentPage(), data.TotalRowCount, { canClear: true });
                     $.each(data.Rows, function (rowIndex, row) {
 
                         var renderedRow = pluginContext.rowRendering.render(row);
@@ -326,8 +341,11 @@
                 this.initializeColumns();
                 this.initializePaging();
                 settings.themeManager.applyTheme($plugin);
-                pluginContext.settings.pageManager.init($plugin, pluginContext.form, settings.themeManager);
+
                 $plugin.data('griffin-table', pluginContext);
+                if (settings.fetchAtStart) {
+                    pluginContext.form.submit();
+                }
 
                 return $(this);
             });
@@ -377,204 +395,7 @@
         }
     };
 
-    var griffinTable = {
-        themeManager: {},
-        pager: {}
-    };
 
-    griffinTable.pager.showMoreLinkPager = {
-        init: function ($table, $form, themeManager) {
-            $moreLink = $('<a style="display:none" href="" id=' + $table.attr('id') + '-pager' + '>Show more</a>');
-            var settings = {
-                $table: $table,
-                themeManager: themeManager,
-                $form: $form,
-                $moreLink: $moreLink
-            };
-
-            themeManager.applyButtonStyle($moreLink);
-
-            $moreLink.click(function (evt) {
-                evt.preventDefault();
-                var newValue = parseInt($('input[name=PageNumber]', settings.$form).val()) + 1;
-                $('input[name=PageNumber]', settings.$form).val(newValue + '');
-                settings.$form.submit();
-            });
-
-            $table.data('pager-settings', settings);
-            $table.after($moreLink);
-        },
-
-        rowsLoaded: function ($table, currentPageNumber, totalRows) {
-            var settings = $table.data('pager-settings');
-            var rowsAdded = $('tbody tr', settings.$table).length;
-
-            if (rowsAdded < totalRows) {
-                settings.$moreLink.show();
-            } else {
-                settings.$moreLink.hide();
-            }
-        }
-    };
-    griffinTable.pager.pageListPager = {
-        init: function ($table, $form, themeManager) {
-            $container = $('<div style="width: 100%; text-align:right;"></div>');
-            var settings = {
-                $table: $table,
-                themeManager: themeManager,
-                $form: $form,
-                $container: $container
-            };
-
-            $table.data('pager-settings', settings);
-            $table.after($container);
-        },
-
-        loadingRows: function ($table, currentPageNumber) {
-            $('tbody tr', $table).remove();
-        },
-
-        rowsLoaded: function ($table, currentPageNumber, totalRows) {
-            var settings = $table.data('pager-settings');
-            var rowsAdded = $('tbody tr', settings.$table).length;
-
-            if (rowsAdded < totalRows) {
-                if (currentPageNumber <= 1) {
-                    var pageSize = parseInt($('input[name=PageSize]', settings.$form).val());
-                    var rest = totalRows % pageSize;
-                    var pageCount = (totalRows - rest) / pageSize;
-                    if (rest > 0)
-                        pageCount++;
-
-                    var pageNumber;
-                    for (pageNumber = 1; pageNumber <= pageCount; ++pageNumber) {
-                        var exec = function (myNumber) {
-                            var $pageLink = $('<a id="' + $table.attr('id') + '_page_' + myNumber + '" href="#">' + pageNumber + '</a>');
-                            settings.themeManager.applyButtonStyle($pageLink);
-                            $pageLink.appendTo(settings.$container);
-                            $pageLink.click(function () {
-                                $('input[name=PageNumber]', settings.$form).val(myNumber);
-                                settings.$form.submit();
-                            });
-                        };
-                        exec(pageNumber); //to get number in scope
-                    }
-                }
-
-                var id = $table.attr('id') + '_page_' + currentPageNumber;
-                settings.themeManager.removeActiveButtonStyle($('a', settings.$container));
-                settings.themeManager.applyActiveButtonStyle($('#' + id));
-
-            } else {
-                settings.$container.hide();
-            }
-        }
-    };
-
-    // Apply jQuery UI theme to the table
-    griffinTable.themeManager.jQueryUI = {
-        applyTheme: function ($table) {
-            $('thead th', $table).each(function (row) {
-                var $this = $(this);
-                var contents = $this.html();
-                $this.addClass('ui-state-default');
-
-                // no sorting for this column
-                if (contents === '' || contents === ' ' || contents === '&nbsp;') {
-                    return this;
-                }
-
-                contents = '<span class="contents">' + contents + '</span><div class="ui-icon ui-icon-triangle-2-n-s" style="float:right;vertical-align:middle"></div>';
-                $this.html(contents);
-
-                return this;
-            });
-
-
-            $table.addClass('ui-widget');
-            $table.attr('cellspacing', '0');
-            $table.attr('cellpadding', '0');
-            $table.css('border-collapse', 'collapse');
-            $table.css('width', '100%');
-        },
-
-        applyButtonStyle: function ($elem) {
-            $elem.addClass('ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only');
-            $elem.css('margin-top', '10px');
-            $elem.css('padding', '10px');
-        },
-
-        applyRowTheme: function ($tr, rowNumber) {
-            if (rowNumber % 2 == 1) {
-                $tr.children('td').addClass('ui-widget-content');
-            }
-        },
-
-        applyActiveButtonStyle: function ($elem) {
-            $elem.addClass('ui-state-active');
-        },
-
-        removeActiveButtonStyle: function ($elem) {
-            $elem.removeClass('ui-state-active');
-        },
-
-        clearSorting: function ($table) {
-            $('thead th .ui-icon', $table).removeClass('ui-icon-triangle-1-s');
-            $('thead th .ui-icon', $table).removeClass('ui-icon-triangle-1-n');
-            $('thead th .ui-icon', $table).addClass('ui-icon-triangle-2-n-s');
-            $('thead th', $table).removeClass('ui-state-highlight');
-        },
-
-        // order = 'asc', 'desc' or ''.
-        applySorting: function ($th, order) {
-            $($th).addClass('ui-state-highlight');
-            switch (order) {
-                case 'asc':
-                    $('.ui-icon', $th).removeClass('ui-icon-triangle-2-n-s');
-                    $('.ui-icon', $th).addClass('ui-icon-triangle-1-n');
-                    break;
-                case 'desc':
-                    $('.ui-icon', $th).removeClass('ui-icon-triangle-2-n-s');
-                    $('.ui-icon', $th).addClass('ui-icon-triangle-1-s');
-                    break;
-                default:
-                    $th.removeClass('ui-state-highlight');
-                    break;
-            }
-        }
-    };
-
-    // use no theme
-    griffinTable.themeManager.noTheme = {
-        /**
-        * Apply the theme to the table.
-        * @param $table Table that should get a theme applied
-        */
-        applyTheme: function ($table) { },
-
-        /**
-        * Apply theme to a newly created row.
-        * @param $tr Table row (as a jQuery object)
-        * @param rowNumber zero-based index
-        */
-        applyRowTheme: function ($tr, rowNumber) { },
-
-        /**
-        * Remove all previously configured sorting icons etc.
-        * Invoked when a header has been clicked (before applySorting())
-        * @param $table Target table (as a jQuery object)
-        */
-        clearSorting: function ($table) { },
-
-        /**
-        * Apply sorting icons etc to the clicked header
-        * @param $th Clicked row as jQuery object
-        * @param order Can be 'asc', 'desc' or ''. Empty string = no sorting
-        */
-        applySorting: function ($th, order) {
-        }
-    };
-    
 
     $.fn.griffinTable = function (method) {
         if (methods[method]) {
@@ -586,6 +407,299 @@
         }
 
         return this;
+
+
+
     };
 
 })(jQuery);
+
+$.griffinTableExtensions = {
+    pageManagers: {},
+    themeManagers: {}
+};
+
+$.griffinTableExtensions.pageManagers.showMoreLinkPager = {
+    init: function ($table, $form, themeManager) {
+        $moreLink = $('<a style="display:none" href="" id=' + $table.attr('id') + '-pager' + '>Show more</a>');
+        var settings = {
+            $table: $table,
+            themeManager: themeManager,
+            $form: $form,
+            $moreLink: $moreLink
+        };
+
+
+        themeManager.applyButtonStyle($moreLink);
+
+        $moreLink.click(function (evt) {
+            evt.preventDefault();
+            var newValue = parseInt($('input[name=PageNumber]', settings.$form).val(), 10) + 1;
+            $('input[name=PageNumber]', settings.$form).val(newValue + '');
+            settings.$form.submit();
+        });
+
+
+        $table.data('pager-settings', settings);
+        $table.after($moreLink);
+    },
+
+
+    rowsLoaded: function ($table, currentPageNumber, totalRows) {
+        var settings = $table.data('pager-settings');
+        var rowsAdded = $('tbody tr', settings.$table).length;
+
+        if (rowsAdded < totalRows) {
+            settings.$moreLink.show();
+        } else {
+            settings.$moreLink.hide();
+
+        }
+    }
+};
+$.griffinTableExtensions.pageManagers.pageListPager = {
+
+
+    init: function ($table, $form, themeManager) {
+        $container = $('<div class="griffin-table-pager" style="text-align:right;width:100%;"></div>');
+        var settings = {
+            $table: $table,
+            themeManager: themeManager,
+            $form: $form,
+            $container: $container
+        };
+
+
+        $table.data('pager-settings', settings);
+        $table.after($container);
+    },
+
+
+    loadingRows: function ($table, currentPageNumber, totalRows, options) {
+        if (options.canClear) {
+            $('tbody tr', $table).remove();
+		}
+    },
+
+
+    rowsLoaded: function ($table, currentPageNumber, totalRows) {
+        var settings = $table.data('pager-settings');
+        var rowsAdded = $('tbody tr', settings.$table).length;
+
+        if (rowsAdded < totalRows) {
+            if (currentPageNumber <= 1) {
+                var pageSize = parseInt($('input[name=PageSize]', settings.$form).val(), 10);
+                var rest = totalRows % pageSize;
+                var pageCount = (totalRows - rest) / pageSize;
+                if (rest > 0) {
+                    pageCount++;
+				}
+				
+                $('a', settings.$container).remove();
+                var pageNumber;
+                for (pageNumber = 1; pageNumber <= pageCount; ++pageNumber) {
+                    var exec = function (myNumber) {
+                        var $pageLink = $('<a id="' + $table.attr('id') + '_page_' + myNumber + '" href="#"> ' + pageNumber + '</a>');
+                        settings.themeManager.applyButtonStyle($pageLink);
+                        $pageLink.appendTo(settings.$container);
+                        settings.$container.append('&nbsp;');
+                        $pageLink.click(function () {
+                            $('input[name=PageNumber]', settings.$form).val(myNumber);
+                            settings.$form.submit();
+                        });
+                    };
+
+
+                    exec(pageNumber); //to get number in scope
+
+                }
+            }
+
+            $('a.active', settings.$container).removeClass('active');
+            if (currentPageNumber === 0) {
+                currentPageNumber = 1;
+			}
+			
+            var id = $table.attr('id') + '_page_' + currentPageNumber;
+            $('#' + id).addClass('active');
+            settings.themeManager.removeActiveButtonStyle($('a', settings.$container));
+            settings.themeManager.applyActiveButtonStyle($('#' + id));
+
+        } else {
+            settings.$container.hide();
+
+        }
+    }
+};
+
+
+// Apply jQuery UI theme to the table
+$.griffinTableExtensions.themeManagers.jQueryUI = {
+
+    applyTheme: function ($table) {
+        $('thead th', $table).each(function (row) {
+            var $this = $(this);
+            var contents = $this.html();
+            $this.addClass('ui-state-default');
+
+            // no sorting for this column
+            if (contents === '' || contents === ' ' || contents === '&nbsp;') {
+                return this;
+            }
+
+
+
+            contents = '<span class="contents">' + contents + '</span><div class="ui-icon ui-icon-triangle-2-n-s" style="float:right;vertical-align:middle"></div>';
+            $this.html(contents);
+
+            return this;
+        });
+
+
+
+
+        $table.addClass('ui-widget');
+        $table.attr('cellspacing', '0');
+        $table.attr('cellpadding', '0');
+        $table.css('border-collapse', 'collapse');
+        $table.css('width', '100%');
+    },
+
+
+    applyButtonStyle: function ($elem) {
+        $elem.addClass('ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only');
+        $elem.css('margin-top', '10px');
+        $elem.css('padding', '10px');
+    },
+
+
+    applyRowTheme: function ($tr, rowNumber) {
+        //if (rowNumber % 2 === 1) {
+        //  $tr.children('td').addClass('ui-widget-content');
+        //}
+    },
+
+
+
+    applyActiveButtonStyle: function ($elem) {
+        $elem.addClass('ui-state-active');
+    },
+
+
+    removeActiveButtonStyle: function ($elem) {
+        $elem.removeClass('ui-state-active');
+    },
+
+
+    clearSorting: function ($table) {
+        $('thead th .ui-icon', $table).removeClass('ui-icon-triangle-1-s');
+        $('thead th .ui-icon', $table).removeClass('ui-icon-triangle-1-n');
+        $('thead th .ui-icon', $table).addClass('ui-icon-triangle-2-n-s');
+        $('thead th', $table).removeClass('ui-state-highlight');
+    },
+
+
+    // order = 'asc', 'desc' or ''.
+    applySorting: function ($th, order) {
+        $($th).addClass('ui-state-highlight');
+        switch (order) {
+            case 'asc':
+                $('.ui-icon', $th).removeClass('ui-icon-triangle-2-n-s');
+                $('.ui-icon', $th).addClass('ui-icon-triangle-1-n');
+                break;
+
+            case 'desc':
+                $('.ui-icon', $th).removeClass('ui-icon-triangle-2-n-s');
+                $('.ui-icon', $th).addClass('ui-icon-triangle-1-s');
+                break;
+
+            default:
+                $th.removeClass('ui-state-highlight');
+                break;
+
+
+        }
+    }
+};
+
+// use no theme
+$.griffinTableExtensions.themeManagers.noTheme = {
+    /**
+    * Apply the theme to the table.
+    * @param $table Table that should get a theme applied
+    */
+    applyTheme: function ($table) { },
+
+
+
+
+    /**
+     * Apply theme to a link or button
+     */
+    applyButtonStyle: function ($elem) {
+    },
+
+
+
+
+    /**
+     * Highlight the active/selected button
+     */
+    applyActiveButtonStyle: function ($elem) {
+    },
+
+
+
+
+
+
+     /** Remove active state */
+    removeActiveButtonStyle: function ($elem) {
+    },
+
+
+
+
+
+
+
+    /**
+    * Apply theme to a newly created row.
+
+    * @param $tr Table row (as a jQuery object)
+    * @param rowNumber zero-based index
+    */
+    applyRowTheme: function ($tr, rowNumber) { },
+
+
+
+
+
+
+
+    /**
+    * Remove all previously configured sorting icons etc.
+    * Invoked when a header has been clicked (before applySorting())
+    * @param $table Target table (as a jQuery object)
+    */
+    clearSorting: function ($table) { },
+
+
+
+
+
+
+
+
+
+    /**
+    * Apply sorting icons etc to the clicked header
+    * @param $th Clicked row as jQuery object
+    * @param order Can be 'asc', 'desc' or ''. Empty string = no sorting
+    */
+    applySorting: function ($th, order) {
+    }
+};
+
+
+

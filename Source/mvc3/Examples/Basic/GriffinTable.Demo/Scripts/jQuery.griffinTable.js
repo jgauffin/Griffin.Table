@@ -1,10 +1,11 @@
-﻿(function ($) {
+﻿/*global window: false */
+(function ($) {
+	"use strict";
     function toObject(jsonArray) {
         if (!(jsonArray instanceof Array)) {
             return jsonArray;
         }
-        var rv = {};
-        var i = 0;
+        var rv = {}, i = 0;
         for (; i < jsonArray.length; ++i) {
             if (jsonArray[i] !== undefined) {
                 rv[jsonArray[i].name] = jsonArray[i].value;
@@ -43,6 +44,7 @@
                     /** The theme manager to use. */
                     themeManager: $.griffinTableExtensions.themeManagers.jQueryUI,
 
+
                     /** styles that should be applied to the table */
                     styles: { /** Class to append to odd rows, used by the default themeManger */
                         oddRowClass: 'odd',
@@ -61,6 +63,7 @@
 
                     /** Builds the paging at the bottom of a page */
                     pageManager: $.griffinTableExtensions.pageManagers.pageListPager,
+
 
                     /** Extension points that you can use to plug into the table */
                     callbacks: {
@@ -157,7 +160,7 @@
                     plugin: $plugin
                 };
                 var templateNode = $('#' + settings.name + settings.rowTemplateSuffix);
-                if (templateNode.length == 1) {
+                if (templateNode.length === 1) {
                     $.template("rowTemplate", templateNode); //outerhtml: .clone().wrap('<div></div>').parent().html()
                     pluginContext.rowRendering.render = function (row) {
                         return pluginContext.plugin.renderRowUsingTemplate(row);
@@ -221,7 +224,7 @@
                 };
 
                 this.getCurrentPage = function () {
-                    return parseInt($('input[name=PageNumber]', pluginContext.form).val());
+                    return parseInt($('input[name=PageNumber]', pluginContext.form).val(), 10);
                 };
 
                 // Takes an (json) object and renders it using a template
@@ -248,8 +251,9 @@
                     var $row = $('<tr></tr>');
                     $.each(pluginContext.columns, function (columnIndex, column) {
                         var $cell = $('<td></td>');
-                        if (column.hidden)
+                        if (column.hidden) {
                             $cell.css('display', 'none');
+						}
                         $cell.html(fetchColumnValue(row, columnIndex));
                         $cell.appendTo($row);
                     });
@@ -277,7 +281,7 @@
                         case 'desc':
                             currentSort = '';
                             break;
-                        case '':
+                        default:
                             currentSort = 'asc';
                             break;
                     }
@@ -296,6 +300,7 @@
                     $('input[name=PageNumber], pluginContent.form').val('1');
 
                     pluginContext.plugin.submitForm();
+
                 };
 
                 this.submitForm = function () {
@@ -309,13 +314,14 @@
                 this.loadData = function (data) {
                     var rowCount = $plugin.children('tbody tr').length;
 
-                    if (typeof data.Rows == 'undefined') {
+                    if (typeof data.Rows === 'undefined') {
                         data.Rows = data;
                         data.TotalRowCount = 0;
-                        data.RowMode = 0;
-                    };
+                    }
 
                     var $tbody = $('tbody', $plugin);
+
+
                     pluginContext.settings.pageManager.loadingRows(pluginContext.$table, plugin.getCurrentPage(), data.TotalRowCount, { canClear: true });
                     $.each(data.Rows, function (rowIndex, row) {
 
@@ -335,6 +341,7 @@
                 this.initializeColumns();
                 this.initializePaging();
                 settings.themeManager.applyTheme($plugin);
+
                 $plugin.data('griffin-table', pluginContext);
                 if (settings.fetchAtStart) {
                     pluginContext.form.submit();
@@ -400,6 +407,9 @@
         }
 
         return this;
+
+
+
     };
 
 })(jQuery);
@@ -419,18 +429,21 @@ $.griffinTableExtensions.pageManagers.showMoreLinkPager = {
             $moreLink: $moreLink
         };
 
+
         themeManager.applyButtonStyle($moreLink);
 
         $moreLink.click(function (evt) {
             evt.preventDefault();
-            var newValue = parseInt($('input[name=PageNumber]', settings.$form).val()) + 1;
+            var newValue = parseInt($('input[name=PageNumber]', settings.$form).val(), 10) + 1;
             $('input[name=PageNumber]', settings.$form).val(newValue + '');
             settings.$form.submit();
         });
 
+
         $table.data('pager-settings', settings);
         $table.after($moreLink);
     },
+
 
     rowsLoaded: function ($table, currentPageNumber, totalRows) {
         var settings = $table.data('pager-settings');
@@ -440,10 +453,13 @@ $.griffinTableExtensions.pageManagers.showMoreLinkPager = {
             settings.$moreLink.show();
         } else {
             settings.$moreLink.hide();
+
         }
     }
 };
 $.griffinTableExtensions.pageManagers.pageListPager = {
+
+
     init: function ($table, $form, themeManager) {
         $container = $('<div class="griffin-table-pager" style="text-align:right;width:100%;"></div>');
         var settings = {
@@ -453,14 +469,18 @@ $.griffinTableExtensions.pageManagers.pageListPager = {
             $container: $container
         };
 
+
         $table.data('pager-settings', settings);
         $table.after($container);
     },
 
+
     loadingRows: function ($table, currentPageNumber, totalRows, options) {
-        if (options.canClear)
+        if (options.canClear) {
             $('tbody tr', $table).remove();
+		}
     },
+
 
     rowsLoaded: function ($table, currentPageNumber, totalRows) {
         var settings = $table.data('pager-settings');
@@ -468,12 +488,13 @@ $.griffinTableExtensions.pageManagers.pageListPager = {
 
         if (rowsAdded < totalRows) {
             if (currentPageNumber <= 1) {
-                var pageSize = parseInt($('input[name=PageSize]', settings.$form).val());
+                var pageSize = parseInt($('input[name=PageSize]', settings.$form).val(), 10);
                 var rest = totalRows % pageSize;
                 var pageCount = (totalRows - rest) / pageSize;
-                if (rest > 0)
+                if (rest > 0) {
                     pageCount++;
-
+				}
+				
                 $('a', settings.$container).remove();
                 var pageNumber;
                 for (pageNumber = 1; pageNumber <= pageCount; ++pageNumber) {
@@ -487,13 +508,18 @@ $.griffinTableExtensions.pageManagers.pageListPager = {
                             settings.$form.submit();
                         });
                     };
+
+
                     exec(pageNumber); //to get number in scope
+
                 }
             }
 
             $('a.active', settings.$container).removeClass('active');
-            if (currentPageNumber == 0)
+            if (currentPageNumber === 0) {
                 currentPageNumber = 1;
+			}
+			
             var id = $table.attr('id') + '_page_' + currentPageNumber;
             $('#' + id).addClass('active');
             settings.themeManager.removeActiveButtonStyle($('a', settings.$container));
@@ -501,12 +527,15 @@ $.griffinTableExtensions.pageManagers.pageListPager = {
 
         } else {
             settings.$container.hide();
+
         }
     }
 };
 
+
 // Apply jQuery UI theme to the table
 $.griffinTableExtensions.themeManagers.jQueryUI = {
+
     applyTheme: function ($table) {
         $('thead th', $table).each(function (row) {
             var $this = $(this);
@@ -518,11 +547,15 @@ $.griffinTableExtensions.themeManagers.jQueryUI = {
                 return this;
             }
 
+
+
             contents = '<span class="contents">' + contents + '</span><div class="ui-icon ui-icon-triangle-2-n-s" style="float:right;vertical-align:middle"></div>';
             $this.html(contents);
 
             return this;
         });
+
+
 
 
         $table.addClass('ui-widget');
@@ -532,25 +565,31 @@ $.griffinTableExtensions.themeManagers.jQueryUI = {
         $table.css('width', '100%');
     },
 
+
     applyButtonStyle: function ($elem) {
         $elem.addClass('ui-button ui-widget ui-state-default ui-corner-all ui-button-text-only');
         $elem.css('margin-top', '10px');
         $elem.css('padding', '10px');
     },
 
+
     applyRowTheme: function ($tr, rowNumber) {
-        //if (rowNumber % 2 == 1) {
+        //if (rowNumber % 2 === 1) {
         //  $tr.children('td').addClass('ui-widget-content');
         //}
     },
+
+
 
     applyActiveButtonStyle: function ($elem) {
         $elem.addClass('ui-state-active');
     },
 
+
     removeActiveButtonStyle: function ($elem) {
         $elem.removeClass('ui-state-active');
     },
+
 
     clearSorting: function ($table) {
         $('thead th .ui-icon', $table).removeClass('ui-icon-triangle-1-s');
@@ -558,6 +597,7 @@ $.griffinTableExtensions.themeManagers.jQueryUI = {
         $('thead th .ui-icon', $table).addClass('ui-icon-triangle-2-n-s');
         $('thead th', $table).removeClass('ui-state-highlight');
     },
+
 
     // order = 'asc', 'desc' or ''.
     applySorting: function ($th, order) {
@@ -567,13 +607,17 @@ $.griffinTableExtensions.themeManagers.jQueryUI = {
                 $('.ui-icon', $th).removeClass('ui-icon-triangle-2-n-s');
                 $('.ui-icon', $th).addClass('ui-icon-triangle-1-n');
                 break;
+
             case 'desc':
                 $('.ui-icon', $th).removeClass('ui-icon-triangle-2-n-s');
                 $('.ui-icon', $th).addClass('ui-icon-triangle-1-s');
                 break;
+
             default:
                 $th.removeClass('ui-state-highlight');
                 break;
+
+
         }
     }
 };
@@ -586,11 +630,17 @@ $.griffinTableExtensions.themeManagers.noTheme = {
     */
     applyTheme: function ($table) { },
 
+
+
+
     /**
      * Apply theme to a link or button
      */
     applyButtonStyle: function ($elem) {
     },
+
+
+
 
     /**
      * Highlight the active/selected button
@@ -598,16 +648,34 @@ $.griffinTableExtensions.themeManagers.noTheme = {
     applyActiveButtonStyle: function ($elem) {
     },
 
+
+
+
+
+
      /** Remove active state */
     removeActiveButtonStyle: function ($elem) {
     },
 
+
+
+
+
+
+
     /**
     * Apply theme to a newly created row.
+
     * @param $tr Table row (as a jQuery object)
     * @param rowNumber zero-based index
     */
     applyRowTheme: function ($tr, rowNumber) { },
+
+
+
+
+
+
 
     /**
     * Remove all previously configured sorting icons etc.
@@ -615,6 +683,14 @@ $.griffinTableExtensions.themeManagers.noTheme = {
     * @param $table Target table (as a jQuery object)
     */
     clearSorting: function ($table) { },
+
+
+
+
+
+
+
+
 
     /**
     * Apply sorting icons etc to the clicked header
@@ -624,3 +700,6 @@ $.griffinTableExtensions.themeManagers.noTheme = {
     applySorting: function ($th, order) {
     }
 };
+
+
+

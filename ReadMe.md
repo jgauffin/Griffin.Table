@@ -23,4 +23,7 @@ ASP.NET MVC3 features
 * Custom view model to structure your view properly
 * Custom model to take as action parameter when searching/filtering
 
+More information
+=================
 
+Read the wiki.

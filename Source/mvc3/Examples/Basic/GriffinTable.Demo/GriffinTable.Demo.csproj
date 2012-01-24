@@ -196,4 +196,11 @@
       </FlavorProperties>
     </VisualStudio>
   </ProjectExtensions>
+  <PropertyGroup>
+    <PreBuildEvent>copy /y "$(SolutionDir)..\..\..\js\plugin\jQuery.griffinTable.js" "$(TargetDir)Scripts"</PreBuildEvent>
+  </PropertyGroup>
+  <PropertyGroup>
+    <PostBuildEvent>
+    </PostBuildEvent>
+  </PropertyGroup>
 </Project>
