@@ -1,0 +1,27 @@
+﻿@using GriffinTable.Mvc3
+@model GriffinTableViewModel<GriffinTable.Demo.Models.TableModel>
+@{
+    ViewBag.Title = "Home Page";
+}
+<h2>@ViewBag.Title</h2>
+
+<script src="@Url.Content("~/Scripts/jsRender.js")" type="text/javascript"></script>
+
+@using (Html.GriffinTableForm("UserTable", route: new { action = "Items" }))
+{
+    @Html.TextBox("Term")
+    <input type="submit" value="Search" />
+}
+
+@Html.GriffinTable("UserTable", Model, GriffinTableOptions.CreateScript)
+
+<script id="UserTable-template" type="text/x-jquery-tmpl">
+    <tr>
+        <td>{{=Id}}</td>
+        <td>{{=FirstName}}</td>
+        <td>{{=LastName}}</td>
+        <td>{{=Title}}</td>
+        <td>{{=Age}}</td>
+        <td>No optiones!</td>
+    </tr>
+</script>

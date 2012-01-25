@@ -13,12 +13,7 @@ namespace GriffinTable.Demo.Controllers
 		{
 			var items = UserRepository.Users.Select(usr => new TableModel(usr, Url)).Take(20);
 
-			return View(new GriffinTableViewModel<TableModel>
-							{
-								PageSize = 20,
-								Rows = items,
-								TotalRowCount = UserRepository.Users.Count()
-							});
+			return View();
 		}
 
 		public ActionResult CustomPager()

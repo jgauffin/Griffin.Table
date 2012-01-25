@@ -87,22 +87,25 @@ namespace GriffinTable.Mvc3
 			sb.AppendLine("\t</tr>");
 			sb.AppendLine("\t<tbody>");
 
-			foreach (var row in model.Rows)
+			if (model != null)
 			{
-				sb.AppendLine("\t\t<tr>");
-				var index = 0;
-				foreach (var property in targetType.GetProperties())
+				foreach (var row in model.Rows)
 				{
-					if (!property.CanRead)
-						continue;
+					sb.AppendLine("\t\t<tr>");
+					var index = 0;
+					foreach (var property in targetType.GetProperties())
+					{
+						if (!property.CanRead)
+							continue;
 
-					var value = property.GetValue(row, null);
-					if (hidden[index++])
-						sb.AppendFormat("\t\t\t<td style=\"display:none;\">{0}</td>\r\n", value);
-					else
-						sb.AppendFormat("\t\t\t<td>{0}</td>\r\n", value);
+						var value = property.GetValue(row, null);
+						if (hidden[index++])
+							sb.AppendFormat("\t\t\t<td style=\"display:none;\">{0}</td>\r\n", value);
+						else
+							sb.AppendFormat("\t\t\t<td>{0}</td>\r\n", value);
+					}
+					sb.AppendLine("\t\t</tr>");
 				}
-				sb.AppendLine("\t\t</tr>");
 			}
 
 			sb.AppendLine("\t</tbody>");
@@ -110,12 +113,25 @@ namespace GriffinTable.Mvc3
 
 			if (options == GriffinTableOptions.CreateScript)
 			{
-				var str = @"<script type=""text/javascript"">
+				if (model != null)
+				{
+					var str = @"<script type=""text/javascript"">
 $(function(){{
 	$('#{0}').griffinTable({{ totalRowCount: {1}, pageSize: {2} }});
 }});
 </script>";
-				sb.AppendLine(string.Format(str, tableName, model.TotalRowCount, model.PageSize));
+					sb.AppendLine(string.Format(str, tableName, model.TotalRowCount, model.PageSize));
+				}
+				else
+				{
+					var str = @"<script type=""text/javascript"">
+$(function(){{
+	$('#{0}').griffinTable({{ fetchAtStart: true }});
+}});
+</script>";
+					sb.AppendLine(string.Format(str, tableName));
+					
+				}
 			}
 
 			return MvcHtmlString.Create(sb.ToString());

@@ -1,6 +1,6 @@
 ﻿/*global window: false */
 (function ($) {
-	"use strict";
+    "use strict";
     function toObject(jsonArray) {
         if (!(jsonArray instanceof Array)) {
             return jsonArray;
@@ -29,21 +29,14 @@
                 var settings = { /** Load rows through ajax when table is initialized */
                     fetchAtStart: false,
 
-                    /** Suffix used to find the form which belongs to this table */
-                    formSuffix: '-form',
-
-                    /** Suffix used to find the jQuery row template
-                    * if the table is named "mytable" then the template should be named
-                    * "mytable-template" per default.
-                    */
-                    rowTemplateSuffix: '-template',
-
                     /** Specify ID if you have named your form to something special. */
                     formId: null,
 
                     /** The theme manager to use. */
                     themeManager: $.griffinTableExtensions.themeManagers.jQueryUI,
-
+                    
+                    /** Used to render templates (or vanilla rows) */
+                    templateManager: $.griffinTableExtensions.templateManagers.defaultRenderer,
 
                     /** styles that should be applied to the table */
                     styles: { /** Class to append to odd rows, used by the default themeManger */
@@ -82,16 +75,7 @@
                         formatColumn: function (rowHtml, rowJson, columnName, columnValue) {
                             return columnValue;
                         }
-                    },
-
-                    formatters: {
-                        currency: function (value) {
-                            return value;
-                        }
-
-
                     }
-
                 };
                 if (options) {
                     $.extend(settings, options);
@@ -113,9 +97,9 @@
                 };
 
                 if (settings.formId === null) {
-                    pluginContext.form = $('#' + settings.name + settings.formSuffix);
+                    pluginContext.form = $('#' + settings.name + '-form');
                     if (pluginContext.form.length === 0) {
-                        alert('All griffin tables must have a corrensponding form. Missing a form named "' + settings.name + settings.formSuffix + '".');
+                        alert('All griffin tables must have a corrensponding form. Missing a form named "' + settings.name + '-form".');
                         return false;
                     }
                 }
@@ -155,22 +139,7 @@
 
                     return false;
                 });
-
-                pluginContext.rowRendering = {
-                    plugin: $plugin
-                };
-                var templateNode = $('#' + settings.name + settings.rowTemplateSuffix);
-                if (templateNode.length === 1) {
-                    $.template("rowTemplate", templateNode); //outerhtml: .clone().wrap('<div></div>').parent().html()
-                    pluginContext.rowRendering.render = function (row) {
-                        return pluginContext.plugin.renderRowUsingTemplate(row);
-                    };
-                }
-                else {
-                    pluginContext.rowRendering.render = function (row) {
-                        return pluginContext.plugin.renderRow(row);
-                    };
-                }
+               
 
                 /** Go through thead and load all columns into our own column array.
                 * Inserts column names as input elements  in the form.
@@ -226,41 +195,6 @@
                 this.getCurrentPage = function () {
                     return parseInt($('input[name=PageNumber]', pluginContext.form).val(), 10);
                 };
-
-                // Takes an (json) object and renders it using a template
-                this.renderRowUsingTemplate = function (row) {
-                    if (typeof row !== 'object') {
-                        row = toObject(row);
-                    }
-
-                    return $.tmpl("rowTemplate", row);
-                };
-
-                // takes an array (assumes that the array items is in the correct order)
-                this.renderRow = function (row) {
-
-                    var fetchColumnValue = function (row, index) {
-                        return row[index];
-                    };
-                    if (!(row instanceof Array)) {
-                        fetchColumnValue = function (row, index) {
-                            return row[pluginContext.columns[index].name];
-                        };
-                    }
-
-                    var $row = $('<tr></tr>');
-                    $.each(pluginContext.columns, function (columnIndex, column) {
-                        var $cell = $('<td></td>');
-                        if (column.hidden) {
-                            $cell.css('display', 'none');
-						}
-                        $cell.html(fetchColumnValue(row, columnIndex));
-                        $cell.appendTo($row);
-                    });
-
-                    return $row;
-                };
-
 
                 this.headerClick = function (column, pluginContext) {
                     var $this = $(column.element);
@@ -325,7 +259,8 @@
                     pluginContext.settings.pageManager.loadingRows(pluginContext.$table, plugin.getCurrentPage(), data.TotalRowCount, { canClear: true });
                     $.each(data.Rows, function (rowIndex, row) {
 
-                        var renderedRow = pluginContext.rowRendering.render(row);
+                        var renderedRow = pluginContext.settings.templateManager.renderRow($plugin, pluginContext.columns, row);
+                        
                         pluginContext.settings.themeManager.applyRowTheme(renderedRow, rowCount);
 
                         renderedRow.appendTo($tbody);
@@ -341,6 +276,7 @@
                 this.initializeColumns();
                 this.initializePaging();
                 settings.themeManager.applyTheme($plugin);
+                settings.templateManager.init($plugin, settings.themeManager);
 
                 $plugin.data('griffin-table', pluginContext);
                 if (settings.fetchAtStart) {
@@ -416,12 +352,77 @@
 
 $.griffinTableExtensions = {
     pageManagers: {},
-    themeManagers: {}
+    themeManagers: {},
+    templateManagers: {}
 };
 
+/** Supports jquery templates, jsRender and no templates at all */
+$.griffinTableExtensions.templateManagers.defaultRenderer = {
+    init: function ($table, themeManager) {
+        var templateNode = $('#' + $table.attr('id') + '-template');
+        if (templateNode.length === 1) {
+            $table.data('row-template', templateNode);
+
+            if (jQuery().render) {
+                $table.data('row-renderer', this.renderRowUsingJsRender);
+            } else if (jQuery().tmpl) {
+                $.template("rowTemplate", templateNode); //outerhtml: .clone().wrap('<div></div>').parent().html()
+                $table.data('row-renderer', this.renderRowUsingTmpl);
+            } else {
+                alert('You have defined a template but either jsRender or jquery.tmpl could be found. Forgot to include a script?');
+            }
+
+            // exit either way
+            return true;
+        }
+
+        $table.data('row-renderer', this.renderRowUsingVanilla);
+        return true;
+    },
+
+    renderRow: function ($table, columns, row) {
+        return $table.data('row-renderer')($table, columns, row);
+    },
+
+    renderRowUsingJsRender: function ($table, columns, row) {
+        return $($($table.data('row-template')).render(row));
+    },
+
+    renderRowUsingTmpl: function ($table, columns, row) {
+        if (typeof row !== 'object') {
+            row = toObject(row);
+        }
+
+        return $.tmpl("rowTemplate", row);
+    },
+
+    renderRowUsingVanilla: function ($table, columns, row) {
+        var fetchColumnValue = function (row, index) {
+            return row[index];
+        };
+        if (!(row instanceof Array)) {
+            fetchColumnValue = function (row, index) {
+                return row[columns[index].name];
+            };
+        }
+
+        var $row = $('<tr></tr>');
+        $.each(columns, function (columnIndex, column) {
+            var $cell = $('<td></td>');
+            if (column.hidden) {
+                $cell.css('display', 'none');
+            }
+            $cell.html(fetchColumnValue(row, columnIndex));
+            $cell.appendTo($row);
+        });
+
+        return $row;
+    }
+};
 $.griffinTableExtensions.pageManagers.showMoreLinkPager = {
     init: function ($table, $form, themeManager) {
-        $moreLink = $('<a style="display:none" href="" id=' + $table.attr('id') + '-pager' + '>Show more</a>');
+        var $container = $('<div class="griffin-table-pager" id="' + $table.attr('id') + '-pager"></div>');
+        var $moreLink = $('<a style="display:none" href="" id=' + $table.attr('id') + '-pager' + '>Show more</a>');
         var settings = {
             $table: $table,
             themeManager: themeManager,
@@ -441,7 +442,11 @@ $.griffinTableExtensions.pageManagers.showMoreLinkPager = {
 
 
         $table.data('pager-settings', settings);
-        $table.after($moreLink);
+        $table.after($container);
+        $container.append($moreLink);
+    },
+
+    loadingRows: function ($table, currentPageNumber, totalRows, options) {
     },
 
 
@@ -461,7 +466,7 @@ $.griffinTableExtensions.pageManagers.pageListPager = {
 
 
     init: function ($table, $form, themeManager) {
-        $container = $('<div class="griffin-table-pager" style="text-align:right;width:100%;"></div>');
+        $container = $('<div class="griffin-table-pager" id="' + $table.attr('id') + '-pager" style="text-align:right;width:100%;"></div>');
         var settings = {
             $table: $table,
             themeManager: themeManager,
@@ -478,7 +483,7 @@ $.griffinTableExtensions.pageManagers.pageListPager = {
     loadingRows: function ($table, currentPageNumber, totalRows, options) {
         if (options.canClear) {
             $('tbody tr', $table).remove();
-		}
+        }
     },
 
 
@@ -493,8 +498,8 @@ $.griffinTableExtensions.pageManagers.pageListPager = {
                 var pageCount = (totalRows - rest) / pageSize;
                 if (rest > 0) {
                     pageCount++;
-				}
-				
+                }
+                
                 $('a', settings.$container).remove();
                 var pageNumber;
                 for (pageNumber = 1; pageNumber <= pageCount; ++pageNumber) {
@@ -508,18 +513,16 @@ $.griffinTableExtensions.pageManagers.pageListPager = {
                             settings.$form.submit();
                         });
                     };
-
-
+                    
                     exec(pageNumber); //to get number in scope
-
                 }
             }
 
             $('a.active', settings.$container).removeClass('active');
             if (currentPageNumber === 0) {
                 currentPageNumber = 1;
-			}
-			
+            }
+            
             var id = $table.attr('id') + '_page_' + currentPageNumber;
             $('#' + id).addClass('active');
             settings.themeManager.removeActiveButtonStyle($('a', settings.$container));
@@ -532,6 +535,33 @@ $.griffinTableExtensions.pageManagers.pageListPager = {
     }
 };
 
+$.griffinTableExtensions.pageManagers.noPager = {
+    /**
+     * Initialize the pager
+     * @param $table jQuery object 
+     * @param $form Form for the table. Contains inputs with the names PageSize and PageNumber
+     * @param themeManager Should be used for styling
+     */
+    init: function ($table, $form, themeManager) {
+    },
+
+    /** New rows are about to be loaded/appended.
+     * @param jQuery object
+     * @param currentPageNumber Loaded page
+     * @param totalRows Number of matching rows that can be loaded
+     * @param options options.canClear tells if the table can be cleared of items
+     */
+    loadingRows: function ($table, currentPageNumber, totalRows, options) {
+    },
+
+    /** All rows for the page have been loaded
+     * @param $table jQuery object
+     * @param currentPageNumber The page that should be used
+     * @param totalRows total number of rows that can be added
+     */
+    rowsLoaded: function ($table, currentPageNumber, totalRows) {
+    }
+};
 
 // Apply jQuery UI theme to the table
 $.griffinTableExtensions.themeManagers.jQueryUI = {
@@ -555,9 +585,7 @@ $.griffinTableExtensions.themeManagers.jQueryUI = {
             return this;
         });
 
-
-
-
+        
         $table.addClass('ui-widget');
         $table.attr('cellspacing', '0');
         $table.attr('cellpadding', '0');
@@ -630,17 +658,11 @@ $.griffinTableExtensions.themeManagers.noTheme = {
     */
     applyTheme: function ($table) { },
 
-
-
-
     /**
      * Apply theme to a link or button
      */
     applyButtonStyle: function ($elem) {
     },
-
-
-
 
     /**
      * Highlight the active/selected button
@@ -648,20 +670,10 @@ $.griffinTableExtensions.themeManagers.noTheme = {
     applyActiveButtonStyle: function ($elem) {
     },
 
-
-
-
-
-
-     /** Remove active state */
+    /** Remove active state */
     removeActiveButtonStyle: function ($elem) {
     },
-
-
-
-
-
-
+    
 
     /**
     * Apply theme to a newly created row.
@@ -671,26 +683,12 @@ $.griffinTableExtensions.themeManagers.noTheme = {
     */
     applyRowTheme: function ($tr, rowNumber) { },
 
-
-
-
-
-
-
     /**
     * Remove all previously configured sorting icons etc.
     * Invoked when a header has been clicked (before applySorting())
     * @param $table Target table (as a jQuery object)
     */
     clearSorting: function ($table) { },
-
-
-
-
-
-
-
-
 
     /**
     * Apply sorting icons etc to the clicked header

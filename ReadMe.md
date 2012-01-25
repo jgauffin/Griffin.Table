@@ -14,6 +14,7 @@ Read the wiki for a more detailed introduction.
 * Built in support for jQuery UI themes.
 * Sorting
 * Advanced filtering
+* Supports templating through templateManagers, built in support for jQuery.tmpl and jsRender.
 
 ASP.NET MVC3 features
 ---------------------
