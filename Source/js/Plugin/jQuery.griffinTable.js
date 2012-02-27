@@ -60,18 +60,16 @@
 
                     /** Extension points that you can use to plug into the table */
                     callbacks: {
-                        // all rows have been loaded 
-                        rowsLoaded: function (addedRowCount, tableRowCount, totalRowCount) { },
+                        /** all rows have been loaded  */
+                        rowsLoaded: function (pageNumber, totalRowCount) { },
 
-                        // will append a row to the table
-                        appendingRow: function (rowHtml, rowJson) { },
-
-                        // about to get rows through ajax
+                        /** about to get rows through ajax */
                         fetchingRows: function (frm) { },
 
-                        // have fetched the rows but not processed them yet
+                        /** have fetched the rows but not processed them yet */
                         fetchedRows: function (frm, data) { },
 
+                        /** Used to format all column values */
                         formatColumn: function (rowHtml, rowJson, columnName, columnValue) {
                             return columnValue;
                         }
@@ -119,6 +117,7 @@
                 pluginContext.form.submit(function (evt) {
                     evt.preventDefault();
 
+                    pluginContext.settings.callbacks.fetchingRows.apply(pluginContext.$table[0], [pluginContext.form]);
                     var formData = pluginContext.form.serialize();
                     var url = pluginContext.form.attr('action');
 
@@ -133,6 +132,7 @@
                         height: pluginContext.$table.height() + "px"
                     });
                     $.get(url, formData, function (json) {
+                        pluginContext.settings.callbacks.fetchedRows.apply(pluginContext.$table[0], [pluginContext.form, json]);
                         plugin.loadData(json);
                         $overlay.remove();
                     });
@@ -185,6 +185,7 @@
                     if (pluginContext.settings.totalRowCount > 0) {
                         pluginContext.settings.pageManager.loadingRows(pluginContext.$table, plugin.getCurrentPage(), options.totalRowCount, { canClear: false });
                         pluginContext.settings.pageManager.rowsLoaded(pluginContext.$table, plugin.getCurrentPage(), options.totalRowCount);
+                       settings.callbacks.rowsLoaded.apply($plugin[0], [plugin.getCurrentPage(), options.totalRowCount]);
                     }
                 };
 
@@ -260,13 +261,18 @@
                     $.each(data.Rows, function (rowIndex, row) {
 
                         var renderedRow = pluginContext.settings.templateManager.renderRow($plugin, pluginContext.columns, row);
+                        if ((rowIndex % 2) == 0) {
+                            renderedRow.addClass('odd');
+                        }
                         
+                        renderedRow.data('griffin-table-data', row);
                         pluginContext.settings.themeManager.applyRowTheme(renderedRow, rowCount);
 
                         renderedRow.appendTo($tbody);
                         ++rowCount;
                     });
                     pluginContext.settings.pageManager.rowsLoaded(pluginContext.$table, plugin.getCurrentPage(), data.TotalRowCount);
+                    pluginContext.settings.callbacks.rowsLoaded.apply(pluginContext.$table[0], [plugin.getCurrentPage(), data.totalRowCount]);
                 };
 
 
@@ -311,9 +317,9 @@
             if (data === undefined) {
                 return this;
             }
-            if (!(data instanceof Array)) {
+            if (!(data.Rows instanceof Array)) {
                 alert(typeof data);
-                alert('loadData expects to get an array.');
+                alert('Invalid JSON format, read the wiki.');
                 return this;
             }
 
@@ -408,6 +414,7 @@ $.griffinTableExtensions.templateManagers.defaultRenderer = {
 
         var $row = $('<tr></tr>');
         $.each(columns, function (columnIndex, column) {
+            
             var $cell = $('<td></td>');
             if (column.hidden) {
                 $cell.css('display', 'none');

@@ -83,9 +83,9 @@ namespace GriffinTable.Mvc3
 					sb.AppendFormat("\t\t\t<th rel=\"{0}\">{1}</th>\r\n", property.Name, name);
 				}
 			}
-			sb.AppendLine("\t\t</thead>");
-			sb.AppendLine("\t</tr>");
-			sb.AppendLine("\t<tbody>");
+            sb.AppendLine("\t\t</tr>");
+            sb.AppendLine("\t</thead>");
+			sb.AppendLine("<tbody>");
 
 			if (model != null)
 			{
