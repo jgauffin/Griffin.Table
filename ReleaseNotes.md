@@ -6,7 +6,7 @@ https://github.com/jgauffin/Griffin.Table/wiki/Callbacks
 
 ## Storing JSON object on each row:
 
-Each <tr> tag that is loaded through the plugin gets it's data/json stored using $().data() which means that you can use jQuery to load it at any time.
+Each `<tr>` tag that is loaded through the plugin gets it's data/json stored using $().data() which means that you can use jQuery to load it at any time.
 
 Example
 
