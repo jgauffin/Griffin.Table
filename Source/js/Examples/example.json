@@ -1,0 +1,10 @@
+{
+    TotalRowCount: 5,
+    Rows:[
+        {Id: 1, FirstName: "Jonas1", LastName: "Gauffin", Age: 35},
+        {Id: 2, FirstName: "Jonas2", LastName: "Gauffin", Age: 35},
+        {Id: 3, FirstName: "Jonas3", LastName: "Gauffin", Age: 35},
+        {Id: 4, FirstName: "Jonas4", LastName: "Gauffin", Age: 35},
+        {Id: 5, FirstName: "Jonas5", LastName: "Gauffin", Age: 35}
+    ]
+}

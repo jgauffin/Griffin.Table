@@ -41,9 +41,6 @@
                     /** styles that should be applied to the table */
                     styles: { /** Class to append to odd rows, used by the default themeManger */
                         oddRowClass: 'odd',
-
-                        /** Class to append to even rows, used by the default themeManager */
-                        evenRowClass: ''
                     },
 
                     /** used to show debug output, default option uses the browser console */
@@ -120,7 +117,8 @@
                     pluginContext.settings.callbacks.fetchingRows.apply(pluginContext.$table[0], [pluginContext.form]);
                     var formData = pluginContext.form.serialize();
                     var url = pluginContext.form.attr('action');
-
+                    var formMethod = pluginContext.form.attr('method');
+                     
                     var pos = pluginContext.$table.position();
                     var $overlay = $('<div style="background-color: grey;opacity: 0.5;">Loading</div>');
                     $('body').append($overlay);
@@ -131,10 +129,14 @@
                         width: pluginContext.$table.width() + "px",
                         height: pluginContext.$table.height() + "px"
                     });
-                    $.get(url, formData, function (json) {
-                        pluginContext.settings.callbacks.fetchedRows.apply(pluginContext.$table[0], [pluginContext.form, json]);
-                        plugin.loadData(json);
-                        $overlay.remove();
+                    $.ajax(url, {
+                        data: formData,
+                        method: formMethod,
+                        success: function (json) {
+                            pluginContext.settings.callbacks.fetchedRows.apply(pluginContext.$table[0], [pluginContext.form, json]);
+                            plugin.loadData(json);
+                            $overlay.remove();
+                        }
                     });
 
                     return false;
