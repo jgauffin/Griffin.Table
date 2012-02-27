@@ -4,7 +4,7 @@
   <link rel="stylesheet" href="Styles/jquery-ui-1.8.16.custom.css">
   <script type="text/javascript" src="scripts/jquery-1.6.2.min.js"></script>
   <script type="text/javascript" src="scripts/jquery-ui-1.8.16.custom.min.js"></script>
-  <script type="text/javascript" src="jQuery.griffinTable.js"></script>
+  <script type="text/javascript" src="../Plugin/jQuery.griffinTable.js"></script>
   <style type="text/css">
     th { text-align: left; padding: 10px; }
     td { border: 1px solid #f0f0f0; padding: 5px; }
@@ -43,7 +43,6 @@
     
 	$(function(){
 		$('table').griffinTable({
-            fetchAtStart: true,
             callbacks: { 
                 rowsLoaded: function() { 
                     $('tr', $(this)).click(function(e) { 
@@ -57,7 +56,7 @@
         });
         
         // simulate an ajax request.
-        //$('table').griffinTable('loadData', exampleJson);
+        $('table').griffinTable('loadData', exampleJson);
 	});
 </script>
 </body>
