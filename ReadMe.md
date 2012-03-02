@@ -15,6 +15,7 @@ Read the wiki for a more detailed introduction.
 * Sorting
 * Advanced filtering
 * Supports templating through templateManagers, built in support for jQuery.tmpl and jsRender.
+* Generates jQueryUI dialogs for edit and deletion of rows.
 
 ASP.NET MVC3 features
 ---------------------

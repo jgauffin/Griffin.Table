@@ -41,8 +41,8 @@
         ]
     };
     
-	$(function(){
-		$('table').griffinTable({
+    $(function(){
+        $('table').griffinTable({
             callbacks: { 
                 rowsLoaded: function() { 
                     $('tr', $(this)).click(function(e) { 
@@ -57,7 +57,7 @@
         
         // simulate an ajax request.
         $('table').griffinTable('loadData', exampleJson);
-	});
+    });
 </script>
 </body>
 </html>

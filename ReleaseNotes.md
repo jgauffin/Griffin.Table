@@ -1,3 +1,10 @@
+# v1.0.6-dev
+
+Added support for jQueryUI dialogs (edit and delete).
+
+Check the js\Examples folder.
+
+
 # v1.0.5
 
 ## Implemented all callbacks
