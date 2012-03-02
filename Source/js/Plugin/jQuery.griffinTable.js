@@ -17,7 +17,7 @@
     var methods = {
         init: function (options) {
             return this.each(function () {
-                var plugin = this;
+                var self = this;
                 var $plugin = $(this);
                 var pluginContext = $plugin.data('griffin-table');
                 if (typeof pluginContext !== 'undefined') {
@@ -73,7 +73,7 @@
                     }
                 };
                 if (options) {
-                    $.extend(settings, options);
+                    $.extend(settings, options, true);
                 }
                 settings.name = $(this).attr('id');
                 if (settings.name === '') {
@@ -88,7 +88,7 @@
                     logger: function (msg) {
                         this.settings.logger(msg);
                     },
-                    plugin: this
+                    self: this
                 };
 
                 if (settings.formId === null) {
@@ -108,7 +108,7 @@
 
                 // manual search = no paging.
                 $('input[type=submit]', pluginContext.form).click(function () {
-                    plugin.resetPaging();
+                    self.resetPaging();
                 });
 
                 pluginContext.form.submit(function (evt) {
@@ -119,29 +119,22 @@
                     var url = pluginContext.form.attr('action');
                     var formMethod = pluginContext.form.attr('method');
                      
-                    var pos = pluginContext.$table.position();
-                    var $overlay = $('<div style="background-color: grey;opacity: 0.5;">Loading</div>');
-                    $('body').append($overlay);
-                    $overlay.css({
-                        position: 'absolute',
-                        top: pos.top,
-                        left: pos.left,
-                        width: pluginContext.$table.width() + "px",
-                        height: pluginContext.$table.height() + "px"
-                    });
+                    
+                    var overlay = methods.overlay.apply(self);
                     $.ajax(url, {
                         data: formData,
                         method: formMethod,
                         success: function (json) {
                             pluginContext.settings.callbacks.fetchedRows.apply(pluginContext.$table[0], [pluginContext.form, json]);
-                            plugin.loadData(json);
-                            $overlay.remove();
+                            self.loadData(json);
+                            overlay.remove();
                         }
                     });
 
                     return false;
                 });
                
+                
 
                 /** Go through thead and load all columns into our own column array.
                 * Inserts column names as input elements  in the form.
@@ -158,13 +151,17 @@
                             index: index,
                             name: $(this).attr('rel')
                         };
-
+                        if (typeof column.name === 'undefined' || column.name == '') {
+                            alert('You must have a rel tag on your <th> tags, it should correspond to the received json field name');
+                            return;
+                        }
+                        
                         column.hidden = column.element.css('display') === 'none' || column.element.hasClass('hidden');
                         pluginContext.columns[index] = column;
                         pluginContext.columnNameMapping[column.name] = column;
                         column.element.data('griffinColumn', column);
                         column.element.click(function () {
-                            pluginContext.plugin.headerClick(column, pluginContext);
+                            pluginContext.self.headerClick(column, pluginContext);
                         });
 
                         if (column.name.toLowerCase() === 'id') {
@@ -185,9 +182,14 @@
                     pluginContext.form.append('<input type="hidden" name="PageNumber" value="1" />');
                     pluginContext.form.append('<input type="hidden" name="PageSize" value="20" />');
                     if (pluginContext.settings.totalRowCount > 0) {
-                        pluginContext.settings.pageManager.loadingRows(pluginContext.$table, plugin.getCurrentPage(), options.totalRowCount, { canClear: false });
-                        pluginContext.settings.pageManager.rowsLoaded(pluginContext.$table, plugin.getCurrentPage(), options.totalRowCount);
-                       settings.callbacks.rowsLoaded.apply($plugin[0], [plugin.getCurrentPage(), options.totalRowCount]);
+                        pluginContext.settings.pageManager.loadingRows(pluginContext.$table, self.getCurrentPage(), options.totalRowCount, { canClear: false });
+                        pluginContext.settings.pageManager.rowsLoaded(pluginContext.$table, self.getCurrentPage(), options.totalRowCount);
+                        
+                        $.each($.griffinTableExtensions.globalHooks.rowsLoaded, function(index, func) {
+                            func.apply(pluginContext.self);
+                        });
+                        
+                       settings.callbacks.rowsLoaded.apply($plugin[0], [self.getCurrentPage(), options.totalRowCount]);
                     }
                 };
 
@@ -210,7 +212,7 @@
                         currentSort = 'desc';
                     }
 
-                    $('thead tr th', pluginContext.plugin).removeClass('asc').removeClass('desc');
+                    $('thead tr th', pluginContext.self).removeClass('asc').removeClass('desc');
                     switch (currentSort) {
                         case 'asc':
                             currentSort = 'desc';
@@ -227,7 +229,7 @@
                         $this.addClass(currentSort);
                     }
 
-                    pluginContext.settings.themeManager.clearSorting(pluginContext.plugin);
+                    pluginContext.settings.themeManager.clearSorting(pluginContext.self);
                     pluginContext.settings.themeManager.applySorting($this, currentSort);
 
                     $('input[name=SortOrder], pluginContent.form').val(currentSort);
@@ -236,7 +238,7 @@
                     // reset paging on sort.
                     $('input[name=PageNumber], pluginContent.form').val('1');
 
-                    pluginContext.plugin.submitForm();
+                    pluginContext.self.submitForm();
 
                 };
 
@@ -259,7 +261,7 @@
                     var $tbody = $('tbody', $plugin);
 
 
-                    pluginContext.settings.pageManager.loadingRows(pluginContext.$table, plugin.getCurrentPage(), data.TotalRowCount, { canClear: true });
+                    pluginContext.settings.pageManager.loadingRows(pluginContext.$table, self.getCurrentPage(), data.TotalRowCount, { canClear: true });
                     $.each(data.Rows, function (rowIndex, row) {
 
                         var renderedRow = pluginContext.settings.templateManager.renderRow($plugin, pluginContext.columns, row);
@@ -273,11 +275,28 @@
                         renderedRow.appendTo($tbody);
                         ++rowCount;
                     });
-                    pluginContext.settings.pageManager.rowsLoaded(pluginContext.$table, plugin.getCurrentPage(), data.TotalRowCount);
-                    pluginContext.settings.callbacks.rowsLoaded.apply(pluginContext.$table[0], [plugin.getCurrentPage(), data.totalRowCount]);
+                    alert('loading');
+                    pluginContext.settings.pageManager.rowsLoaded(pluginContext.$table, self.getCurrentPage(), data.TotalRowCount);
+                    pluginContext.settings.callbacks.rowsLoaded.apply(self, [self.getCurrentPage(), data.totalRowCount]);
+                    
+                    $.each($.griffinTableExtensions.globalHooks.rowsLoaded, function(index, func) {
+                        func.apply(pluginContext.self);
+                    });
+
                 };
 
-
+                this.updateRow = function (row, data) {
+                    var $row = $(row);
+                    
+                    var css = $row.attr('class');
+                    var data = $row.data('griffin-table-data');
+                    
+                    var renderedRow = pluginContext.settings.templateManager.renderRow($plugin, pluginContext.columns, data);
+                    renderedRow.data('griffin-table-data', data);
+                    renderedRow.attr('class', css);
+                    pluginContext.settings.themeManager.applyRowTheme(renderedRow, $('tr', $row.closest('tbody')).length);
+                    $row.replaceWith(renderedRow);
+                };
 
 
                 // rest of initialization here.
@@ -285,6 +304,7 @@
                 this.initializePaging();
                 settings.themeManager.applyTheme($plugin);
                 settings.templateManager.init($plugin, settings.themeManager);
+                pluginContext.$table.addClass('griffin-table');
 
                 $plugin.data('griffin-table', pluginContext);
                 if (settings.fetchAtStart) {
@@ -326,17 +346,36 @@
             }
 
             var pluginContext = $(this).data('griffin-table');
-            pluginContext.plugin.loadData(data);
+            pluginContext.self.loadData(data);
 
             return $(this);
         },
-
-        show: function () { // ... 
+        
+        overlay: function() {
+            var pluginContext = $(this).data('griffin-table');
+            
+            var $overlay = $('<div class="griffin-table-overlay" style="background-color: grey;opacity: 0.5;">Loading</div>');
+            $('body').append($overlay);
+            var pos = pluginContext.$table.position();
+            $overlay.css({
+                position: 'absolute',
+                top: pos.top,
+                left: pos.left,
+                width: pluginContext.$table.width() + "px",
+                height: pluginContext.$table.height() + "px"
+            });     
+            return $overlay;
         },
-        hide: function () { // ... 
+        
+        updateRow: function(row, data) {
+            var pluginContext = $(this).data('griffin-table');
+            pluginContext.self.updateRow(row, data);
         },
-        update: function (content) { // ...
+        
+        update: function() {
+            pluginContext.self.submit();
         }
+
     };
 
 
@@ -361,7 +400,11 @@
 $.griffinTableExtensions = {
     pageManagers: {},
     themeManagers: {},
-    templateManagers: {}
+    templateManagers: {},
+    globalHooks: {
+        // use $.griffinTableExtensions.globalHooks.rowsLoaded.push(function() { /* yourfunc */ }); // this = table.
+        rowsLoaded: []
+    }
 };
 
 /** Supports jquery templates, jsRender and no templates at all */

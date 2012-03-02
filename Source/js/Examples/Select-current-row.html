@@ -1,11 +1,21 @@
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <head>
-  <title>Table demo - Basic</title>
+  <title>Table demo</title>
+  <link rel="stylesheet" href="Styles/jquery-ui-1.8.16.custom.css">
   <script type="text/javascript" src="scripts/jquery-1.6.2.min.js"></script>
+  <script type="text/javascript" src="scripts/jquery-ui-1.8.16.custom.min.js"></script>
+  <script type="text/javascript" src="scripts/jsrender.js"></script>
   <script type="text/javascript" src="../Plugin/jQuery.griffinTable.js"></script>
   <style type="text/css">
-    th { text-align: left; }
+    th { text-align: left; padding: 10px; }
+    td { border: 1px solid #f0f0f0; padding: 5px; }
+    tr.odd { background-color: #eeeeee; }
     #middle {width: 800px;}
+
+    .griffin-table tbody tr.selected {
+        border: 2px solid #666666;
+        background: #9999ff;
+    }
  </style>
 </head>
 <body>
@@ -18,11 +28,11 @@
                 <th rel="Id">Id</th>
                 <th rel="FirstName">First name</th>
                 <th rel="LastName">Last name</th>
+                <th rel="Options"></th>
             </tr>
         </thead>
         <tbody></tbody>
     </table>
-    
 </div>
 
 <script type="text/javascript">
@@ -38,12 +48,20 @@
     };
     
 	$(function(){
-		$('table').griffinTable();
+		$('table').griffinTable({
+            callbacks: { 
+                rowsLoaded: function() { 
+                    // selection code.
+                    $('tbody tr', this).click(function() {
+                        $('tr', $(this).closest('tbody')).removeClass('selected');
+                        $(this).addClass('selected');
+                    });
+                } 
+            }
+        });
         
         // simulate an ajax request.
         $('table').griffinTable('loadData', exampleJson);
-        
-        
 	});
 </script>
 </body>
